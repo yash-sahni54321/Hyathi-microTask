@@ -1,0 +1,68 @@
+// // prisma/schema.prisma
+// // This is your Prisma schema file,
+// // learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id       String    @id @unique @default(uuid()) @db.Uuid
+  email    String    @unique
+  password String
+  roleId   Int       @default(2)
+  name     String
+  role     Role      @relation(fields: [roleId], references: [id])
+  tokens   Token[]
+  products Product[]
+  orders   Order[]
+}
+
+model Role {
+  id    Int    @id @default(autoincrement())
+  label String
+  users User[]
+}
+
+model Token {
+  id      Int    @id @default(autoincrement())
+  token   String @unique
+  expires String
+  userId  String @db.Uuid
+  user    User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model Product {
+  id          String      @id @unique @default(uuid()) @db.Uuid
+  name        String
+  description String
+  price       Float
+  stock       Int
+  creator     String      @db.Uuid
+  user        User        @relation(fields: [creator], references: [id], onDelete: Cascade)
+  orderItems  OrderItem[]
+}
+
+model Order {
+  id        String      @id @unique @default(uuid()) @db.Uuid
+  userId    String      @db.Uuid
+  user      User        @relation(fields: [userId], references: [id])
+  items     OrderItem[]
+  total     Float
+  status    String
+  createdAt DateTime    @default(now())
+}
+
+model OrderItem {
+  id        String  @id @unique @default(uuid()) @db.Uuid
+  quantity  Int
+  productId String  @db.Uuid
+  product   Product @relation(fields: [productId], references: [id])
+  orderId   String  @db.Uuid
+  order     Order   @relation(fields: [orderId], references: [id])
+}

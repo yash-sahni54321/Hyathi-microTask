@@ -26,6 +26,6 @@ cd product-service - npm i , npm run dev
 ## Database
 
 I have used common Database for all the three service 
-DATABASE_URL = (postgres://yash:3l3hrooBQ9d32RohvKDtUry63YE6JRze@dpg-ck9f19egtj9c73cgiukg-a.oregon-postgres.render.com/ecommerce)
+DATABASE_URL = ( postgres://yash:3l3hrooBQ9d32RohvKDtUry63YE6JRze@dpg-ck9f19egtj9c73cgiukg-a.oregon-postgres.render.com/ecommerce )
 
 

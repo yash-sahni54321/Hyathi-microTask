@@ -4,10 +4,6 @@ import { ApiErrorHandler } from "../../../shared/utils";
 
 export const checkRole = (requiredRights: UserRights[]): RequestHandler => {
   return (req: Request, res: Response, next: NextFunction) => {
-    if (!req.user) {
-      return next();
-    }
-
     const { user } = req;
     if (!user) {
       throw new ApiErrorHandler({ message: "User not found", code: 404 });

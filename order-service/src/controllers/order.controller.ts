@@ -1,4 +1,4 @@
-import { Request, Response } from "express";
+import { Request, Response, NextFunction } from "express";
 import { PrismaClient } from "@prisma/client";
 import {
   CreateOrderRequestBody,
@@ -9,24 +9,31 @@ import {
 const prisma = new PrismaClient();
 
 import fetch from "node-fetch";
+import { Product } from "../types/product";
+
+import EventEmitter from "events";
+import axios from "axios";
+const eventEmitter = new EventEmitter();
 
 // Create a new order
-export const createOrder = async (req: Request, res: Response) => {
+export const createOrder = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
   try {
-    const { user, items, total, status, createdAt } = req.body;
-    const order: CreateOrderRequestBody = req.body;
+    const { items } = req.body;
     const userId = req.user!.id;
 
-    const productPromises = order.items.map(async (item) => {
-      const productId = item.productId;
-      const response = await fetch(
-        `postgres://yash:3l3hrooBQ9d32RohvKDtUry63YE6JRze@dpg-ck9f19egtj9c73cgiukg-a.oregon-postgres.render.com/ecommerce/products/${productId}`
-      );
-      const productData = await response.json();
-      return { ...item, productData };
-    });
-
-    const itemDetails = await Promise.all(productPromises);
+    const itemDetails = await Promise.all(
+      items.map(async (item: any) => {
+        const productId = item.productId;
+        const productData = await prisma.product.findUnique({
+          where: { id: productId },
+        });
+        return { ...item, productData };
+      })
+    );
 
     const calculatedTotal = itemDetails.reduce((total, item) => {
       const productPrice = item.productData.price;
@@ -53,6 +60,30 @@ export const createOrder = async (req: Request, res: Response) => {
       },
     });
 
+    itemDetails.map(async (item) => {
+      const product = await prisma.product.findUnique({
+        where: { id: item.productId },
+      });
+
+      if (product) {
+        const newstock = product.stock - item.quantity;
+        await updateProductStock(item.productId, newstock);
+      } else {
+        console.error(`Product with ID ${item.productId} not found.`);
+      }
+    });
+
+    // itemDetails.map((item) => {
+    //   eventEmitter.emit("order-created", {
+    //     id:items.id,
+    //     stock:item.quantity
+    //   })
+    // })
+    // // eventEmitter.emit("orderCreated", {
+    // //   id: newOrder.id,
+    // //   items: itemDetails,
+    // // });
+
     const response: OrderResponse = {
       success: true,
       order: newOrder,
@@ -69,6 +100,63 @@ export const createOrder = async (req: Request, res: Response) => {
     res.status(500).json(response);
   }
 };
+// Update product stock
+export const updateProductStock = async (
+  productId: string,
+  updatedStock: number
+) => {
+  try {
+    // Use Prisma to update the product stock
+    await prisma.product.update({
+      where: { id: productId },
+      data: {
+        stock: updatedStock,
+      },
+    });
+  } catch (error) {
+    console.error("Error updating product stock:", error);
+    throw new Error("Could not update product stock.");
+  }
+};
+// // api to update the product stock
+// export const updateProductStock = async (req: Request, res: Response) => {
+//   try {
+//     const product: Product = req.body;
+
+//     const updatedProduct = await prisma.product.update({
+//       where: { id: product.id },
+//       data: {
+//         stock: product.stock,
+//       },
+//     });
+
+//     res.status(200).json(updatedProduct);
+//   } catch (error) {
+//     console.error("Error while apdating", error);
+//     const response = {
+//       success: false,
+//       error: "Could not update product stock.",
+//     };
+
+//     res.status(500).json(response);
+//   }
+// };
+
+// eventEmitter.on("orderCreated", async ({ orderId, items }) => {
+//   try {
+//     // Call the updateProductStock API with the necessary data
+//     const response = await axios.post("/update-stock", {
+//       orderId,
+//       items,
+//     });
+
+//     // Handle the response as needed
+//     console.log("Product stock updated:", response.data);
+//   } catch (error) {
+//     // Handle errors
+//     console.error("Error updating product stock:", error);
+//   }
+// });
 
 // Update an existing order
 export const updateOrder = async (req: Request, res: Response) => {
@@ -154,4 +242,5 @@ export default {
   createOrder,
   updateOrder,
   cancelOrder,
+  updateProductStock,
 };

@@ -12,24 +12,31 @@ const router = Router();
 const prisma = new PrismaClient();
 
 router.post(
-    "/",
-    isAuthenticated(),
-    //   checkRole([UserRights.PLACE_ORDER]),
-    catchAsync(orderController.createOrder)
-);
-
-router.put(
-    "/:id",
-    isAuthenticated(),
-    //   checkRole([UserRights.UPDATE_ORDER]),
-    catchAsync(orderController.updateOrder)
+  "/create",
+  isAuthenticated(),
+  //   checkRole([UserRights.PLACE_ORDER]),
+  catchAsync(orderController.createOrder)
 );
 
 router.post(
-    "/cancel",
-    isAuthenticated(),
-    //   checkRole([UserRights.CANCEL_ORDER]),
-    catchAsync(orderController.cancelOrder)
+  "/update-stock",
+  isAuthenticated(),
+  //   checkRole([UserRights.PLACE_ORDER]),
+  catchAsync(orderController.updateProductStock)
+);
+
+router.put(
+  "/:id",
+  isAuthenticated(),
+  //   checkRole([UserRights.UPDATE_ORDER]),
+  catchAsync(orderController.updateOrder)
+);
+
+router.post(
+  "/cancel",
+  isAuthenticated(),
+  //   checkRole([UserRights.CANCEL_ORDER]),
+  catchAsync(orderController.cancelOrder)
 );
 
 export default router;
